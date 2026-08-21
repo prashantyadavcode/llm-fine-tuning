@@ -1,6 +1,17 @@
 # SFT vs RAG vs DPO
 
+If the acronyms still feel empty, read [00-start-here.md](00-start-here.md) first (intern + JSON-ticket story). This page is the same decision with sharper edges.
+
 This is the decision note. Most “should I fine-tune?” questions collapse into: **what do I need the weights to change?**
+
+## Plain recap (before the precise version)
+
+- **Prompting** — ask better. No training.
+- **RAG** — look up notes at question time. No training. For facts that change or must be cited.
+- **SFT** — show gold answers; the model copies the habit (format, tone, a narrow skill).
+- **DPO** — show “this reply is better than that one.” Use after SFT, when the format exists but the typical mistakes are still ugly.
+
+You train (SFT/DPO) to change **habits**. You retrieve (RAG) to supply **facts**. Mixing those two jobs is the usual source of confusion.
 
 ## Next-token prediction is not “the model learned my PDF”
 

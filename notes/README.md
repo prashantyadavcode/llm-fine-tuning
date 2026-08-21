@@ -2,6 +2,8 @@
 
 Goal: answer “why fine-tune, how, and how do you know it worked?” without waving hands. You already know loss and backprop; this phase is the LLM-specific layer on top.
 
+**New to SFT / DPO / RAG?** Start with [00-start-here.md](00-start-here.md). It uses one intern story and one JSON-ticket example, then names the acronyms. The later notes are the same picture with more precision.
+
 **Compute reminder:** Colab Pro (L4/A100). QLoRA on 7B–14B is the ceiling. Interviewers care about data, eval, and judgment more than parameter count.
 
 ## What you should be able to say out loud
@@ -17,6 +19,7 @@ Goal: answer “why fine-tune, how, and how do you know it worked?” without wa
 
 | Order | Note | Why it exists |
 |-------|------|----------------|
+| 0 | [00-start-here.md](00-start-here.md) | Plain-language on-ramp: next token, intern analogy, glossary |
 | 1 | [sft-vs-rag-vs-dpo.md](sft-vs-rag-vs-dpo.md) | When to fine-tune, what SFT vs DPO vs RAG actually change |
 | 2 | [lora-qlora.md](lora-qlora.md) | Why full FT does not fit Colab; rank, α, merge |
 | 3 | [chat-templates.md](chat-templates.md) | Tokenizers, `apply_chat_template`, assistant-only loss |

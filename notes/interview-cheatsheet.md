@@ -1,5 +1,7 @@
 # Interview cheatsheet (Phase 1)
 
+If this page is a wall of acronyms, read [00-start-here.md](00-start-here.md) first.
+
 Ninety-second answers. Details live in the topic notes.
 
 **Did fine-tuning teach the model my PDF?**  
