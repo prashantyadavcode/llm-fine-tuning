@@ -1,34 +1,46 @@
-# Phase 1 — Mental models
+# Fine-tuning from scratch
 
-Goal: answer “why fine-tune, how, and how do you know it worked?” without waving hands. You already know loss and backprop; this phase is the LLM-specific layer on top.
+This folder is your starting point. Read it like a short book, **in order**. You do not need to already know the acronyms. Each page introduces words as they appear.
 
-**New to SFT / DPO / RAG?** Start with [00-start-here.md](00-start-here.md). It uses one intern story and one JSON-ticket example, then names the acronyms. The later notes are the same picture with more precision.
+## What you are learning
 
-**Compute reminder:** Colab Pro (L4/A100). QLoRA on 7B–14B is the ceiling. Interviewers care about data, eval, and judgment more than parameter count.
+You want to take an existing chatbot (a smaller cousin of ChatGPT) and **teach it a new habit** using examples you write — on a rented GPU (Google Colab), without a data center.
 
-## What you should be able to say out loud
+That extra teaching is called **fine-tuning**.
 
-1. Fine-tuning does not “upload a PDF.” It shifts next-token probabilities.
-2. The usual post-pretrain stack is **SFT → preference (DPO/ORPO) → optional RL**. This path does the first two.
-3. **Do not fine-tune** when RAG, prompting, or constrained decoding already solves the problem.
-4. Instruct models expect a **chat template**. Train and serve with the same one. Mask user tokens so loss is assistant-only.
-5. **LoRA** is a low-rank update `ΔW = BA`. **QLoRA** keeps a 4-bit frozen base and trains those adapters in 16-bit.
-6. Measure the **base model on a held-out task metric before any training**. If the metric does not move, iterate on data, not epochs.
+You are **not** building a model from nothing. Companies already spent millions teaching models English and general chat. You download that finished model, then give it extra lessons for *your* job.
 
-## Reading order
+## How to read
 
-| Order | Note | Why it exists |
-|-------|------|----------------|
-| 0 | [00-start-here.md](00-start-here.md) | Plain-language on-ramp: next token, intern analogy, glossary |
-| 1 | [sft-vs-rag-vs-dpo.md](sft-vs-rag-vs-dpo.md) | When to fine-tune, what SFT vs DPO vs RAG actually change |
-| 2 | [lora-qlora.md](lora-qlora.md) | Why full FT does not fit Colab; rank, α, merge |
-| 3 | [chat-templates.md](chat-templates.md) | Tokenizers, `apply_chat_template`, assistant-only loss |
-| 4 | [eval-before-train.md](eval-before-train.md) | Held-out metrics, overfitting, catastrophic forgetting |
-| 5 | [tiny-experiment.md](tiny-experiment.md) | 2-hour lab: same prompt, base vs a public LoRA |
-| — | [interview-cheatsheet.md](interview-cheatsheet.md) | 90-second answers for the six points above |
+Sit with one page at a time. If a later page feels fuzzy, go back one page — do not skip ahead and hope it clicks.
 
-Skip for now (on purpose): full RLHF/PPO, GRPO at scale, multi-GPU Axolotl, writing CUDA kernels.
+| Order | File | What you will understand |
+|-------|------|--------------------------|
+| 1 | [01-what-an-llm-does.md](01-what-an-llm-does.md) | A chatbot is a next-word guesser, not a filing cabinet |
+| 2 | [02-using-vs-teaching.md](02-using-vs-teaching.md) | Chatting with a model is different from teaching it |
+| 3 | [03-four-ways-to-change-behavior.md](03-four-ways-to-change-behavior.md) | When to just ask better, look things up, or actually train |
+| 4 | [04-what-your-examples-look-like.md](04-what-your-examples-look-like.md) | The homework you show the model, and why wrapping matters |
+| 5 | [05-how-it-fits-on-a-normal-gpu.md](05-how-it-fits-on-a-normal-gpu.md) | Why we add a small “sticky note” of extra weights instead of rewriting the whole model |
+| 6 | [06-how-you-know-it-worked.md](06-how-you-know-it-worked.md) | Give it a test *before* training, or you cannot tell if training helped |
+| 7 | [07-your-path-to-doing-this-yourself.md](07-your-path-to-doing-this-yourself.md) | The actual steps you will take with your own hands |
+| 8 | [08-first-look-see-a-change.md](08-first-look-see-a-change.md) | A 2-hour exercise: same question, before vs after an add-on |
 
-## Exit
+## One running example
 
-You can explain each row in the table above in ~90 seconds, and you have run (or scheduled) the tiny adapter experiment. Phase 2 is the first real SFT.
+Every page uses the same imaginary product, so the ideas stay concrete:
+
+> A user pastes a messy support ticket.  
+> The bot must reply with **only** JSON, like:  
+> `{"priority": "high", "product": "login", "next_action": "reset_password"}`
+
+That is a *habit* (always this shape, no chatter). Fine-tuning is good at habits. It is a bad way to store a company wiki that changes every week.
+
+## If you remember only this
+
+1. The model guesses the **next small piece of text**, over and over.
+2. Fine-tuning makes those guesses more like **your examples**. It does not upload a PDF into a database.
+3. Try **better instructions** first. If the facts change, **look them up at question time**. Train only when you need a habit the model still fails.
+4. You train a small add-on (not the whole brain) so it fits on Colab.
+5. Success is a **test score that went up**, not a training number that went down.
+
+When you finish page 7, you will know *what* to do. Then we start doing it: load a small model, write examples, train, measure.
