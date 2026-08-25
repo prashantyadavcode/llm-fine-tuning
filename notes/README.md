@@ -21,7 +21,7 @@ Sit with one page at a time. If a later page feels fuzzy, go back one page — d
 | 3 | [03-four-ways-to-change-behavior.md](03-four-ways-to-change-behavior.md) | When to just ask better, look things up, or actually train |
 | 4 | [04-what-your-examples-look-like.md](04-what-your-examples-look-like.md) | The homework you show the model, and why wrapping matters |
 | 5 | [05-how-it-fits-on-a-normal-gpu.md](05-how-it-fits-on-a-normal-gpu.md) | Why we add a small “sticky note” of extra weights instead of rewriting the whole model |
-| 6 | [06-how-you-know-it-worked.md](06-how-you-know-it-worked.md) | Give it a test *before* training, or you cannot tell if training helped |
+| 6 | [06-how-you-know-it-worked.md](06-how-you-know-it-worked.md) | Loss, eval set, baseline, task metric, epoch, overfitting — definition, why, parameters |
 | 7 | [07-your-path-to-doing-this-yourself.md](07-your-path-to-doing-this-yourself.md) | The actual steps you will take with your own hands |
 | 8 | [08-first-look-see-a-change.md](08-first-look-see-a-change.md) | A 2-hour exercise: same question, before vs after an add-on |
 

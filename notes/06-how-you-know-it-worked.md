@@ -1,101 +1,126 @@
 # 6. How you know it worked
 
-Training software will print a number called **loss**. When loss goes down, it means: “the sticky notes are getting better at reproducing the *training* answers.”
+Fine-tuning prints numbers while it runs. Those numbers are not enough. These are the terms you use to measure whether the **job** got better.
 
-That is not the same as: “the product got better.”
+Order of work: lock an eval set → score the **baseline** → train → score the **same** eval set with the same **task metric**. If the metric did not move, change data, not extra **epochs**.
 
-The intern can memorize the study packet and still fail new tickets. You need an **exam the intern did not study**.
+---
 
-## The loop (do this in this order, every time)
+## Loss
 
-```text
-1. Write the exam and the scoring rule     ← before any GPU
-2. Score the untouched instruct model      ← the baseline
-3. Train
-4. Score the SAME exam
-5. If the score did not move → change the study packet,
-   not “train longer”
-```
+**Definition:** A number that says how wrong the model’s next-token guesses are on the **training** examples. Lower = closer to copying those examples.
 
-Step 2 is the one people skip. Without it you cannot say fine-tuning helped. A strict prompt on the original intern might already have been good enough.
+**Why it is used:** To check that training is actually running (the adapter is fitting the homework). It is a debug signal, not proof the product improved.
 
-## Score the job, not “it sounded nice”
+**Parameters:**
+- Computed only on tokens you train (usually assistant tokens)
+- Goes down if the model memorizes the train file, even when new prompts fail
+- Do not pick the best run by lowest loss alone
 
-Pick a score a skeptic cannot game with fluent nonsense.
+**Example:** Loss 1.8 → 0.3 on 80 train rows, while valid-JSON on new tickets stays 40%. Training copied homework; the job did not improve.
 
-For the ticket bot, a simple score is:
+---
 
-> Percent of replies that parse as JSON **and** have the keys `priority`, `product`, `next_action`.
+## Held-out eval set
 
-“Sounds like a reasonable priority” is not a score. `json.loads` either works or it does not.
+**Definition:** A fixed file of prompts (and gold answers) the trainer **never** sees. Also called test set or held-out evaluation.
 
-Other jobs have their own honest scores:
+**Why it is used:** So you measure skill on **new** wording, not memory of train rows.
 
-| Job | Honest score |
-|-----|----------------|
-| Strict JSON | Percent valid + required keys present |
-| Copy fields out of text | Did this field match the gold value? |
-| Text → SQL | Run the SQL on a frozen database; did the result match? |
-| “Cite or say you don’t know” | Citation when evidence exists; refusal when it does not |
+**Parameters:**
+- **Size:** ~20 items is enough to start; larger later
+- **Split:** write this file before training; do not edit it to make a run look good
+- **Overlap:** no copy-paste of train prompts (paraphrase; different entities)
+- **Coverage:** same task as train; include hard / refuse / unknown cases
 
-At the beginning, **about 20 exam tickets** is enough to learn from, as long as you do not cheat. It is a signal, not a scientific paper. You still need the number so you cannot lie to yourself.
+**Example:** Train on 100 tickets. Eval is 20 **other** tickets with the same JSON schema, different wording.
 
-Also write **10 failures by hand** after you look at outputs. That paragraph will teach you more than a pretty training graph.
+---
 
-## The exam must be a real exam
+## Baseline
 
-- **Paraphrase.** Same intent, different wording than training.
-- **Same job.** Do not train “JSON tickets” and test “write a poem.”
-- **No leakage.** If a test ticket is almost a training ticket, you measured memory, not skill.
-- **Include “should refuse” cases.** Tickets that should say unknown, or omit a field. A score that only counts happy-path JSON will hide collapse.
+**Definition:** The task-metric score of the **original instruct model** on the eval set, **before** your fine-tune, using the same prompt and generation settings.
 
-Lock the exam file **before** you start tweaking training. If you keep editing the exam to make your new run look good, the exam is no longer an exam.
+**Why it is used:** Without it you cannot say fine-tuning helped. A strong prompt on the base model might already be good enough.
 
-## Signs you memorized the study packet
+**Parameters:**
+- Same eval file as after training
+- Same chat template
+- Same decoding (see below)
+- Record this number first; then train
 
-You are using 50–200 hand-written examples. That is enough to teach a format. It is also enough to memorize.
+**Example:** Untouched Qwen Instruct: 8/20 eval tickets produce valid JSON. After SFT: 16/20. The baseline is 8/20.
 
-Watch for:
+---
 
-- Training loss near zero, exam score flat or worse
-- The intern recites a training answer for a similar but not identical ticket
-- You change one product name in the ticket and still get the old product name out
+## Task metric
 
-Fixes that are not “train longer”:
+**Definition:** A score tied to the **job**, that a fluent wrong answer cannot fake. Not “it sounded nice,” not loss.
 
-- More variety in wording and in the entities (products, names)
-- Fewer passes (1–2), stop when the **exam** stops improving
-- A smaller sticky note if you are clearly memorizing
-- Add paraphrases to **training** only after the exam file is locked
+**Why it is used:** Language models can be confident and wrong. The metric must fail when the output is unusable.
 
-**If the exam did not move, iterate on data, not epochs.** That sentence is the whole beginner superpower.
+**Parameters (pick one that matches the job):**
+- Structured JSON → % that parse + required keys present
+- Field extraction → exact match or F1 vs gold fields
+- Text-to-SQL → execution accuracy on a frozen database
+- Cite-or-abstain → citation when evidence exists; refusal when it does not
 
-## Fair fights only
+**Example:** Ticket bot metric = `json.loads` succeeds **and** keys `priority`, `product`, `next_action` exist. “Sounds like high priority” is not a metric.
 
-When you compare “before” and “after”:
+---
 
-- Same exam file
-- Same wrapping
-- Same generation settings (how random, how long, when to stop)
+## Epoch
 
-If the original intern answers at “creative and random” and your fine-tune answers at “always pick the most likely token,” you did not compare training. You compared two different ways of talking. For JSON jobs, prefer boring, low-randomness generation on both sides.
+**Definition:** One full pass through the training file.
 
-## What you are allowed to claim
+**Why it is used:** You need a stop rule. More epochs on a tiny file is the usual way to memorize.
 
-You may say: “Loss went down, **and** valid-JSON on 20 held-out tickets went from 40% to 90%.”
+**Parameters:**
+- Small custom data (50–200 rows): **1–3** epochs
+- Stop when the **task metric** stops improving (or gets worse)
+- If eval is flat after epoch 1, do not go to epoch 8 on the same rows — rewrite data
 
-You may not say: “Loss went down, therefore the model learned the task.”
+**Example:** Epoch 1: eval 12/20. Epoch 2: 13/20. Epoch 5: train loss ~0, eval 11/20. Stop at 2; the extra epochs overfit.
 
-If the exam did not improve, the honest writeup says so, then you show the data change you try next. That honesty is part of learning this for real.
+---
 
-## Words from this page
+## Overfitting
 
-| Word | Plain meaning |
-|------|----------------|
-| **Loss** | “How well am I copying the training answers?” — debugging only |
-| **Held-out eval** | An exam the trainer never saw |
-| **Baseline** | The original instruct model, scored on that exam *before* you train |
-| **Task metric** | A score tied to the job (valid JSON %), not a vibe |
-| **Overfitting** | Memorized the study packet; fails new wording |
+**Definition:** The model memorizes training strings (or near-copies) and fails when the user paraphrases or changes an entity.
+
+**Why it matters:** 50–200 examples can teach a format **and** be memorized. Low loss with a flat eval is the usual signature.
+
+**Parameters that make it worse:**
+- Many epochs on few rows
+- High LoRA rank on tiny data (too much capacity)
+- Train and eval that are near-duplicates
+- Little variety in templates and entity values
+
+**Example:** Train ticket mentions product `sso`. Eval ticket says `VPN`. Model still outputs `"product": "sso"`. That is overfitting, not a learned skill.
+
+---
+
+## Decoding (generation settings)
+
+**Definition:** How the model picks the next token at **eval time** (not training): randomness, max length, stop tokens.
+
+**Why it is used:** Baseline vs fine-tune must be a fair comparison. Changing decoding between the two runs mixes two different experiments.
+
+**Parameters:**
+- **Temperature** / sampling: for schema jobs use greedy or temperature `0` on **both** sides
+- **Max new tokens:** same cap
+- **Stop / EOS:** same stop strings so replies do not run on
+- Chat template: same as training ([page 4](04-what-your-examples-look-like.md))
+
+**Example:** Base at temperature 0.8, SFT at temperature 0.0 is not a valid “fine-tuning helped” claim.
+
+---
+
+## How to read a result
+
+Valid claim: task metric on the locked eval set went from **baseline X** to **SFT Y**.  
+Invalid claim: loss went down, therefore the model learned the task.
+
+If Y ≤ X: change the **training data**, not epoch count.
 
 Next: [the path you will actually walk with your own hands](07-your-path-to-doing-this-yourself.md).
